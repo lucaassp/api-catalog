@@ -3,6 +3,7 @@ package com.api.catalog.services;
 import com.api.catalog.domains.Category;
 import com.api.catalog.dto.CategoryDTO;
 import com.api.catalog.repositories.CategoryRepository;
+import com.api.catalog.services.exceptions.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,8 +25,9 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
-    public Category findById(Long id) {
+    public CategoryDTO findById(Long id) {
         Optional<Category> obj = repository.findById(id);
-        return obj.get();
+        Category entity = obj.orElseThrow(() -> new ResourceNotFoundException(id));
+        return new CategoryDTO(entity);
     }
 }
