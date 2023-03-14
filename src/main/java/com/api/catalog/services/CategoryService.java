@@ -3,9 +3,13 @@ package com.api.catalog.services;
 import com.api.catalog.domains.Category;
 import com.api.catalog.dto.CategoryDTO;
 import com.api.catalog.repositories.CategoryRepository;
+import com.api.catalog.services.exceptions.DatabaseException;
 import com.api.catalog.services.exceptions.ResourceNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +34,7 @@ public class CategoryService {
     public CategoryDTO findById(Long id) {
         return repository.findById(id)
                 .map(c -> new CategoryDTO(c))
-                .orElseThrow(() -> new ResourceNotFoundException(id));
+                .orElseThrow(() -> new ResourceNotFoundException("Id " + id + " not found"));
     }
 
     @Transactional
@@ -45,13 +49,25 @@ public class CategoryService {
     @Transactional
     public CategoryDTO update(Long id, CategoryDTO dto) {
         try {
-            Category entity = repository.getOne(id);
+            Category entity = repository.getReferenceById(id);
             entity.setName(dto.getName());
             entity = repository.save(entity);
             return new CategoryDTO(entity);
         }
         catch (EntityNotFoundException e) {
-            throw new ResourceNotFoundException(id);
+            throw new ResourceNotFoundException("Id " + id + " not found");
         }
     }
+
+    public void delete(Long id) {
+        try {
+            repository.deleteById(id);
+        } catch (EmptyResultDataAccessException e) {
+            throw new ResourceNotFoundException("Id " + id + " not found");
+        } catch (DataIntegrityViolationException e) {
+            throw new DatabaseException("Integrity violation");
+        }
+    }
+
+
 }
